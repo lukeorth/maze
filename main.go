@@ -5,9 +5,11 @@ import (
 )
 
 func main() {
-    f, _ := os.Create("test.png")
-    defer f.Close()
+    //f, _ := os.Create("test.png")
+    //f, _ := os.Create("test.gif")
+    //defer f.Close()
 
-    maze := NewMaze(1000, 1000, 5)
-    maze.Png(f)   
+    //maze := NewMaze(50, 50, 5)
+    //maze.Png(f)   
+    MazeAnimation(os.Stdout, 50, 50, 5)
 }

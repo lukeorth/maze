@@ -1,13 +1,14 @@
 package main
 
 import (
-    "image"
-    "image/color"
-    "image/png"
-    "io"
-    "math"
-    "math/rand"
-    "time"
+	"image"
+	"image/color"
+	"image/gif"
+	"image/png"
+	"io"
+	"math"
+	"math/rand"
+	"time"
 )
 
 type Maze struct {
@@ -23,6 +24,29 @@ type Cell struct {
     walls   uint8
     visited bool
     current bool
+}
+
+func MazeAnimation(out io.Writer, cols int, rows int, scale int) {
+    // Initialize the maze
+    maze := &Maze{
+        cells: make([]*Cell, cols * rows),
+        cols: cols,
+        rows: rows,
+        scale: scale,
+    }
+
+    // Initialize the cells
+    for y := 0; y < rows; y++ {
+        for x := 0; x < cols; x++ {
+            maze.cells[cols * y + x] = &Cell{x, y, 15, false, false}
+        }
+    }
+
+    anim := &gif.GIF{}
+
+    maze.generateMaze(anim, 0, 0, 0, NewStack())
+
+    gif.EncodeAll(out, anim)
 }
 
 func NewMaze(cols int, rows int, scale int) *Maze {
@@ -41,7 +65,7 @@ func NewMaze(cols int, rows int, scale int) *Maze {
         }
     }
 
-    maze.checkNeighbors(0, 0, 0, NewStack())
+    //maze.generateMaze(0, 0, 0, NewStack())
 
     return maze
 }
@@ -59,6 +83,52 @@ func (m *Maze) Png(w io.Writer) {
         c.DrawPNG(img, m.scale)
     }
     png.Encode(w, img)
+}
+
+func (c *Cell) DrawGIF(img *image.Paletted, scale int) {
+    // weight of cell wall in pixels
+    weight := int(math.Ceil(float64(scale) / 4))
+
+    // cell corners (including walls)
+    x1 := c.x * (scale + weight)
+    x2 := x1 + (2 * weight) + scale - 1
+    y1 := c.y * (scale + weight)
+    y2 := y1 + (2 * weight) + scale - 1
+
+    black := color.RGBA{0, 0, 0, 255}
+    white := color.RGBA{255, 255, 255, 255}
+
+    for x := x1; x <= x2; x++ {
+        for y := y1; y <= y2; y++ {
+            // initialize all pixels to black
+            img.Set(x, y, black)
+            // set pixels to white (open) where needed
+            if x > x1 && x < x2 {
+                // cell body
+                if y > y1 && y < y2 {
+                    img.Set(x, y, white)
+                }
+                // top wall
+                if y < y1 + weight && c.walls & 8 == 0 {
+                    img.Set(x, y, white)
+                }
+                // bottom wall
+                if y > y2 - weight && c.walls & 2 == 0 {
+                    img.Set(x, y, white)
+                }
+            }
+            if y > y1 && y < y2 {
+                // left wall
+                if x < x1 + weight && c.walls & 1 == 0 {
+                    img.Set(x, y, white)
+                }
+                // right wall
+                if x > x2 - weight && c.walls & 4 == 0 {
+                    img.Set(x, y, white)
+                }
+            }
+        }
+    }
 }
 
 func (c *Cell) DrawPNG(img *image.RGBA, scale int) {
@@ -107,7 +177,20 @@ func (c *Cell) DrawPNG(img *image.RGBA, scale int) {
     }
 }
 
-func (m *Maze) checkNeighbors(x int, y int, count int, seen *Stack) *Cell {
+func (m *Maze) generateMaze(a *gif.GIF, x int, y int, count int, seen *Stack) *Cell {
+    // animation
+    width := m.cols * (2 * m.scale) + m.scale
+    height := m.rows * (2 * m.scale) + m.scale
+    palette := []color.Color{color.White, color.Black}
+    img := image.NewPaletted(image.Rect(0, 0, width, height), palette)
+    
+    for _, c := range m.cells {
+        c.DrawGIF(img, m.scale)
+    }
+
+    a.Image = append(a.Image, img)
+    a.Delay = append(a.Delay, 0)
+
     c := m.cellAt(x, y)
     c.current = false
     neighbors := []*Cell{ 
@@ -126,14 +209,14 @@ func (m *Maze) checkNeighbors(x int, y int, count int, seen *Stack) *Cell {
            
             c.removeWall(randNeighbor)
             seen.Push(c)
-            m.checkNeighbors(randNeighbor.x, randNeighbor.y, count + 1, seen)
+            m.generateMaze(a, randNeighbor.x, randNeighbor.y, count + 1, seen)
             return randNeighbor
         }
     }
     if len(seen.cell) > 0 {
         c, _ := seen.Pop()
         c.current = true
-        m.checkNeighbors(c.x, c.y, count + 1, seen)
+        m.generateMaze(a, c.x, c.y, count + 1, seen)
     }
     return nil
 }
