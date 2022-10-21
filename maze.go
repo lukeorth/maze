@@ -97,6 +97,7 @@ func (c *Cell) DrawGIF(img *image.Paletted, scale int) {
 
     black := color.RGBA{0, 0, 0, 255}
     white := color.RGBA{255, 255, 255, 255}
+    red := color.RGBA{255, 0, 0, 0}
 
     for x := x1; x <= x2; x++ {
         for y := y1; y <= y2; y++ {
@@ -106,7 +107,11 @@ func (c *Cell) DrawGIF(img *image.Paletted, scale int) {
             if x > x1 && x < x2 {
                 // cell body
                 if y > y1 && y < y2 {
-                    img.Set(x, y, white)
+                    if c.current == true {
+                        img.Set(x, y, red)
+                    } else {
+                        img.Set(x, y, white)
+                    }
                 }
                 // top wall
                 if y < y1 + weight && c.walls & 8 == 0 {

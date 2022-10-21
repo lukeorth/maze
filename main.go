@@ -11,5 +11,5 @@ func main() {
 
     //maze := NewMaze(50, 50, 5)
     //maze.Png(f)   
-    MazeAnimation(os.Stdout, 50, 50, 5)
+    MazeAnimation(os.Stdout, 20, 20, 5)
 }
