@@ -97,39 +97,39 @@ func (c *Cell) DrawGIF(img *image.Paletted, scale int) {
 
     black := color.RGBA{0, 0, 0, 255}
     white := color.RGBA{255, 255, 255, 255}
-    red := color.RGBA{255, 0, 0, 0}
+    green := color.RGBA{0, 255, 0, 0}
 
     for x := x1; x <= x2; x++ {
         for y := y1; y <= y2; y++ {
-            // initialize all pixels to black
-            img.Set(x, y, black)
-            // set pixels to white (open) where needed
+            // initialize all pixels to white
+            img.Set(x, y, white)
+            // set pixels to black (open) where needed
             if x > x1 && x < x2 {
                 // cell body
                 if y > y1 && y < y2 {
-                    if c.current == true {
-                        img.Set(x, y, red)
+                    if c.current {
+                        img.Set(x, y, green)
                     } else {
-                        img.Set(x, y, white)
+                        img.Set(x, y, black)
                     }
                 }
                 // top wall
                 if y < y1 + weight && c.walls & 8 == 0 {
-                    img.Set(x, y, white)
+                    img.Set(x, y, black)
                 }
                 // bottom wall
                 if y > y2 - weight && c.walls & 2 == 0 {
-                    img.Set(x, y, white)
+                    img.Set(x, y, black)
                 }
             }
             if y > y1 && y < y2 {
                 // left wall
                 if x < x1 + weight && c.walls & 1 == 0 {
-                    img.Set(x, y, white)
+                    img.Set(x, y, black)
                 }
                 // right wall
                 if x > x2 - weight && c.walls & 4 == 0 {
-                    img.Set(x, y, white)
+                    img.Set(x, y, black)
                 }
             }
         }
@@ -183,10 +183,20 @@ func (c *Cell) DrawPNG(img *image.RGBA, scale int) {
 }
 
 func (m *Maze) generateMaze(a *gif.GIF, x int, y int, count int, seen *Stack) *Cell {
+    c := m.cellAt(x, y)
+    c.current = true
+
     // animation
-    width := m.cols * (2 * m.scale) + m.scale
-    height := m.rows * (2 * m.scale) + m.scale
-    palette := []color.Color{color.White, color.Black}
+    weight := int(math.Ceil(float64(m.scale) / 4))
+    width := (m.cols - 1) * (m.scale + weight) + (2 * weight) + m.scale
+    height := (m.rows - 1) * (m.scale + weight) + (2 * weight) + m.scale
+    //width := m.cols * (2 * m.scale) + m.scale
+    //height := m.rows * (2 * m.scale) + m.scale
+    palette := []color.Color{
+        color.RGBA{255, 255, 255, 255},
+        color.RGBA{0, 0, 0, 255},
+        color.RGBA{0, 255, 0, 255},
+    }
     img := image.NewPaletted(image.Rect(0, 0, width, height), palette)
     
     for _, c := range m.cells {
@@ -196,7 +206,6 @@ func (m *Maze) generateMaze(a *gif.GIF, x int, y int, count int, seen *Stack) *C
     a.Image = append(a.Image, img)
     a.Delay = append(a.Delay, 0)
 
-    c := m.cellAt(x, y)
     c.current = false
     neighbors := []*Cell{ 
         m.cellAt(x, y - 1),
@@ -220,7 +229,6 @@ func (m *Maze) generateMaze(a *gif.GIF, x int, y int, count int, seen *Stack) *C
     }
     if len(seen.cell) > 0 {
         c, _ := seen.Pop()
-        c.current = true
         m.generateMaze(a, c.x, c.y, count + 1, seen)
     }
     return nil
