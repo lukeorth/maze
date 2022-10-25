@@ -227,7 +227,7 @@ func (m *Maze) generateMaze(a *gif.GIF, x int, y int, count int, seen *Stack) *C
             return randNeighbor
         }
     }
-    if len(seen.cell) > 0 {
+    if len(seen.cells) > 0 {
         c, _ := seen.Pop()
         m.generateMaze(a, c.x, c.y, count + 1, seen)
     }
