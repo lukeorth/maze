@@ -1,3 +1,3 @@
-module github.com/LukeOrth/maze
+module github.com/lukeorth/maze
 
 go 1.18
